@@ -1,0 +1,5 @@
+# Rust build output
+/target
+
+# Personal notes, kept local
+docs/personal-notes.md
