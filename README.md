@@ -217,7 +217,7 @@ A leak matters when it slows the system down. As memory fills up, the kernel rec
 - **Major page faults:** the page has to be read back from disk, for example from swap.[^perf-event] They are much slower, and their rate rises once the leak creates memory pressure.
 - **`read`/`write` latency:** measured between syscall entry and exit. With a smaller page cache, reads that were served from RAM now go to disk.
 
-The kernel classifies a fault as minor or major only after it has handled the fault. dmld therefore attaches to the `PERF_COUNT_SW_PAGE_FAULTS_MIN` and `_MAJ` software events. These are defined on every architecture, unlike the x86-only `exceptions:page_fault_user` tracepoint.[^pf-tp] That tracepoint fires before the fault is resolved, so it can't tell minor from major. If you only need per-process totals, `/proc/<pid>/stat` already exposes `minflt` and `majflt`.
+The kernel classifies a fault as minor or major only after it has handled the fault. dmld therefore attaches to the `PERF_COUNT_SW_PAGE_FAULTS_MIN` and `_MAJ` software events. These are defined on every architecture. The `exceptions:page_fault_user` tracepoint is not: it was x86-only until Linux 6.16, and since then only x86 and RISC-V emit it (arm64, for example, does not).[^pf-tp] That tracepoint also fires before the fault is resolved, so it can't tell minor from major. If you only need per-process totals, `/proc/<pid>/stat` already exposes `minflt` and `majflt`.
 
 These curves show a **correlation**, not a proof of causation. Latency can also rise for other reasons, such as another process saturating the disk.
 
@@ -442,7 +442,7 @@ The eBPF programs (`dmld-ebpf`) are licensed under **GPL-2.0** (dual MIT/GPL-2.0
 [^kernel-versions]: BCC, *BPF features by Linux kernel version* (ring buffer: 5.8). <https://github.com/iovisor/bcc/blob/master/docs/kernel-versions.md>
 [^caps]: `capabilities(7)` man page: `CAP_BPF` and `CAP_PERFMON` (since Linux 5.8), `CAP_SYS_PTRACE`. <https://man7.org/linux/man-pages/man7/capabilities.7.html>
 [^bpf-helpers]: `bpf-helpers(7)` man page: `bpf_get_stackid`, `BPF_F_USER_STACK`. <https://man7.org/linux/man-pages/man7/bpf-helpers.7.html>
-[^pf-tp]: Linux source, `arch/x86/include/asm/trace/exceptions.h` (`page_fault_user` tracepoint). <https://elixir.bootlin.com/linux/latest/source/arch/x86/include/asm/trace/exceptions.h>
+[^pf-tp]: Linux source, `include/trace/events/exceptions.h` (`page_fault_user` tracepoint), moved there from `arch/x86/include/asm/trace/exceptions.h` in 6.16 by commit 06aa9378df01, *x86/tracing, x86/mm: Move page fault tracepoints to generic*. <https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/trace/events/exceptions.h>
 [^frame-pointers]: B. Gregg, *The Return of the Frame Pointers* (2024). <https://www.brendangregg.com/blog/2024-03-17/the-return-of-the-frame-pointers.html>
 [^uprobe-cost]: GitLab Infrastructure, *Measure uprobe overhead to support safer instrumentation decisions*: per-call uprobe costs and the 10K calls/s guideline. <https://gitlab.com/gitlab-com/gl-infra/scalability/-/issues/1383>
 [^memleak-man]: BCC `memleak(8)` man page: OVERHEAD section and `-o OLDER` option. <https://mankier.com/8/bcc-memleak>
