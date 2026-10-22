@@ -23,6 +23,10 @@ fn attach(ebpf: &mut Ebpf, target: &Path, pid: NonZeroU32) -> anyhow::Result<()>
     for (program, symbol) in [
         ("malloc_enter", "malloc"),
         ("malloc_exit", "malloc"),
+        ("calloc_enter", "calloc"),
+        ("calloc_exit", "calloc"),
+        ("realloc_enter", "realloc"),
+        ("realloc_exit", "realloc"),
         ("free_enter", "free"),
     ] {
         let prog: &mut UProbe = ebpf

@@ -6,7 +6,11 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-/// Threads that can be inside `malloc` at the same time.
+mod alloc;
+
+pub use alloc::{Outcome, Pending, allocation_outcome};
+
+/// Threads that can be inside the allocator at the same time.
 pub const PENDING_MAX_ENTRIES: u32 = 8_192;
 
 /// Live blocks tracked at once. A full map drops new allocations instead of

@@ -28,7 +28,8 @@ Stdout is the sample stream. Status and errors go to stderr.
   --json           one JSON object per line
 
 Live bytes count memory allocated after dmld attaches. free of an older block
-is counted in ignored_frees, not in frees.
+is counted in ignored_frees, not in frees. A realloc that moves an older block
+counts as an ignored free plus a new allocation.
 
 Scripts should pass --plain or --json. The terminal lines may change.
 
@@ -41,7 +42,7 @@ Exit codes:
 
 Issues: https://github.com/ValyonBJ/dynamic-memory-leak-detector/issues";
 
-/// Count malloc and free calls in one running process.
+/// Count malloc, calloc, realloc, and free in one running process.
 #[derive(Debug, Parser)]
 #[command(
     name = "dmld",
@@ -124,7 +125,7 @@ impl Exit {
 fn probe_remedy(error: &anyhow::Error) -> &'static str {
     let text = format!("{error:#}").to_lowercase();
     if text.contains("symbol") {
-        "The library has no malloc or free symbol. It may be stripped, or this process may use another allocator."
+        "The library has no malloc, calloc, realloc, or free symbol. It may be stripped, or this process may use another allocator."
     } else if text.contains("not permitted")
         || text.contains("eperm")
         || text.contains("permission")
@@ -154,15 +155,13 @@ async fn run() -> Result<(), Exit> {
     let detected = detect(pid).map_err(Exit::Detect)?;
     if !opt.quiet {
         eprintln!(
-            "Attaching malloc and free probes to pid {pid}, {}, {}.",
+            "Attaching malloc, calloc, realloc, and free probes to pid {pid}, {}, {}.",
             detected.kind.as_str(),
             detected.host_path.display()
         );
     }
     if opt.debug {
-        eprintln!(
-            "debug: probes malloc_enter (uprobe), malloc_exit (uretprobe), free_enter (uprobe)."
-        );
+        eprintln!("debug: symbols malloc, calloc, realloc, and free.");
         eprintln!(
             "debug: tracking up to {} live blocks.",
             dmld_common::ALLOCS_MAX_ENTRIES
